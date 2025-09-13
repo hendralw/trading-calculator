@@ -5,25 +5,38 @@ export default function Page() {
   return <TradingCalculator />;
 }
 
-// ==== Komponenmu di bawah ini (boleh ditempatkan di file terpisah juga) ====
 import { useMemo, useState } from "react";
-//test commit
+
 function TradingCalculator() {
-  const [balance, setBalance] = useState(100);
-  const [riskPct, setRiskPct] = useState(2);
-  const [entry, setEntry] = useState(0.0065);
-  const [stop, setStop] = useState(0.0060);
-  const [tp, setTp] = useState(0.009);
-  const [direction, setDirection] = useState<"long" | "short">("long");
+  const [balance, setBalance] = useState(0);
+  const [riskPct, setRiskPct] = useState(0);
+  const [entry, setEntry] = useState(0);
+  const [stop, setStop] = useState(0);
+  const [tp, setTp] = useState(0);
+  const [direction, setDirection] = useState< "long" | "short">("long");
 
   const fmt = (n: number) => {
     if (Number.isNaN(n) || !Number.isFinite(n)) return "-";
     const abs = Math.abs(n);
     const digits = abs >= 100 ? 2 : abs >= 1 ? 4 : 6;
-    return new Intl.NumberFormat(undefined, {
-      minimumFractionDigits: Math.min(4, digits),
+    const minFrac = Math.min(4, digits);
+
+    const fmtOpts: Intl.NumberFormatOptions = {
+      minimumFractionDigits: minFrac,
       maximumFractionDigits: digits,
-    }).format(n);
+    };
+
+    // Build parts to detect exact ".0000" (or locale-equivalent) output
+    const nf = new Intl.NumberFormat(undefined, fmtOpts);
+    const parts = nf.formatToParts(n);
+    const fraction = parts.find((p) => p.type === "fraction")?.value;
+
+    // If it would render as exactly four zeros after separator, show integer only
+    if (fraction === "0000") {
+      return new Intl.NumberFormat(undefined, { maximumFractionDigits: 0 }).format(n);
+    }
+
+    return nf.format(n);
   };
 
   const toNum = (v: number | string) => {
@@ -86,44 +99,31 @@ function TradingCalculator() {
     color?: string;
   }) => (
     <div
-      className={`p-4 rounded-2xl border bg-white shadow-sm ${
-        color || "border-gray-200"
+      className={`p-4 rounded-xl border-2 border-black shadow-[6px_6px_0_0_#000] ${
+        color || "bg-white"
       }`}
     >
-      <div className="text-sm text-gray-500">{label}</div>
+      <div className="text-sm text-black">{label}</div>
       <div className="text-xl font-semibold text-gray-900 mt-1">{value}</div>
-      {sub ? <div className="text-xs text-gray-400 mt-1">{sub}</div> : null}
+      {sub ? <div className="text-xs text-black/70 mt-1">{sub}</div> : null}
     </div>
   );
 
-  const rrColor = (() => {
-    if (!values.rrValue || Number.isNaN(values.rrValue)) return "border-gray-200";
-    if (values.rrValue > 2) return "border-green-400";
-    if (values.rrValue >= 1) return "border-yellow-400";
-    return "border-red-400";
-  })();
-
   return (
-    <div className="min-h-screen w-full bg-gradient-to-b from-gray-50 to-white text-gray-900">
+    <div className="min-h-screen w-full bg-[#F6F6F6] text-gray-900">
       <div className="max-w-5xl mx-auto px-4 py-8">
-        <header className="mb-6">
-          <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">
-            Position Sizing Calculator · Crypto Futures
-          </h1>
-          <p className="text-gray-600 mt-1">
-            Hitung size, notional, dan leverage yang pas dari{" "}
-            <span className="font-medium">Entry</span> &{" "}
-            <span className="font-medium">Stop Loss</span>.
-          </p>
+        <header className="mb-5 text-center">
+          <h1 className="tw-title">Futures Calculator</h1>
         </header>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-          <div className="lg:col-span-2 p-5 rounded-2xl border border-gray-200 bg-white shadow-sm">
-            <h2 className="text-lg font-semibold mb-4">Input</h2>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 gap-4">
+          <div className="tw-card">
+          
+            <div className="grid grid-cols-2 gap-4">
               <label className="flex flex-col gap-1">
-                <span className="text-sm text-gray-600">Account Balance (USDT)</span>
+                <span className="text-xs sm:text-sm text-gray-600">
+                  <span className="text-sm text-gray-600">Balance (USDT)</span>
+                </span>
                 <input
                   type="number"
                   step="0.01"
@@ -148,7 +148,7 @@ function TradingCalculator() {
                 <label className="flex flex-col gap-1 flex-1">
                   <span className="text-sm text-gray-600">Direction</span>
                   <select
-                    className="tw-input"
+                    className="tw-input tw-select"
                     value={direction}
                     onChange={(e) =>
                       setDirection(e.target.value as "long" | "short")
@@ -183,7 +183,7 @@ function TradingCalculator() {
               </label>
 
               <label className="flex flex-col gap-1">
-                <span className="text-sm text-gray-600">Take Profit (optional)</span>
+                <span className="text-sm text-gray-600">Take Profit Price</span>
                 <input
                   type="number"
                   step="0.0000001"
@@ -193,42 +193,37 @@ function TradingCalculator() {
                 />
               </label>
             </div>
-
-            <div className="mt-6 p-4 rounded-xl bg-gray-50 border border-dashed border-gray-300 text-sm text-gray-700">
-              <p className="mb-1">Formulas:</p>
-              <ul className="list-disc ml-5 space-y-1">
-                <li>Risk(USDT) = Balance × Risk% / 100</li>
-                <li>SL Distance = |Entry − Stop|</li>
-                <li>Drawdown% = |Entry − Stop| / Entry × 100</li>
-                <li>Position Size(coin) = Risk / SL Distance</li>
-                <li>Notional(USDT) = Position Size × Entry</li>
-                <li>Margin Used = Risk(USDT)</li>
-                <li>Leverage Needed = Notional / MarginUsed</li>
-                <li>Leverage from Drawdown = 100 / Drawdown%</li>
-              </ul>
-            </div>
           </div>
 
-          <div className="grid grid-cols-1 gap-4">
-            <Stat label="Risk (USDT)" value={`$ ${fmt(values.riskUSDT)}`} sub="Jumlah rugi maksimal sesuai Risk%" />
-            <Stat label="SL Distance" value={fmt(values.slDist)} sub="Jarak Entry ↔ Stop" />
-            <Stat label="Drawdown % (auto)" value={values.ddPctAuto ? `${fmt(values.ddPctAuto)}%` : "-"} sub="Persentase jarak Entry → SL" />
-            <Stat label="Position Size (coin)" value={fmt(values.posSize)} sub="Jumlah coin/kontrak yang disarankan" />
-            <Stat label="Notional Value (USDT)" value={`$ ${fmt(values.notional)}`} sub="Ukuran posisi sebenarnya" />
-            <Stat label="Margin Used (auto)" value={`$ ${fmt(values.riskUSDT)}`} sub="Modal dialokasikan = Balance × Risk%" />
-            <Stat label="Leverage Needed" value={fmt(values.levNeeded)} sub="Leverage minimum agar margin cukup" />
-            <Stat label="Leverage from Drawdown" value={fmt(values.levFromDd)} sub="Leverage dihitung dari jarak Entry → SL" />
-            <Stat label="Risk : Reward (if TP)" value={values.rrDisplay || "-"} sub="RR ditampilkan sebagai 1 : X" color={rrColor} />
-            <Stat label="PnL at TP (USDT)" value={Number.isFinite(values.pnlAtTp) ? `$ ${fmt(values.pnlAtTp)}` : "-"} sub="Estimasi profit jika TP tercapai" />
+          <div className="grid grid-cols-2 gap-4 mt-2">
+            <Stat
+              color="bg-sky-200"
+              label="Risk (USDT)"
+              value={Number.isFinite(values.riskUSDT) && values.riskUSDT > 0 ? `$ ${fmt(values.riskUSDT)}` : "-"}
+              sub="Max loss according to Risk%"
+            />
+            <Stat color="bg-sky-200" label="SL Distance" value={values.slDist > 0 ? fmt(values.slDist) : "-"} sub="Distance between Entry and Stop" />
+            <Stat color="bg-sky-200" label="Drawdown % " value={values.ddPctAuto ? `${fmt(values.ddPctAuto)}%` : "-"} sub="Percent distance from Entry to SL" />
+            <Stat color="bg-sky-200" label="Position Size (coin)" value={fmt(values.posSize)} sub="Suggested number of coins/contracts" />
+            <Stat
+              color="bg-sky-200"
+              label="Notional Value (USDT)"
+              value={Number.isFinite(values.notional) && values.notional > 0 ? `$ ${fmt(values.notional)}` : "-"}
+              sub="Actual position size"
+            />
+            <Stat
+              color="bg-sky-200"
+              label="Leverage Needed"
+              value={Number.isFinite(values.levNeeded) ? "x" + Math.floor(values.levNeeded).toString() : "-"}
+              sub="Minimum leverage to cover margin"
+            />
+            <Stat color="bg-sky-200" label="Risk : Reward (if TP)" value={values.rrDisplay || "-"} sub="RR shown as 1 : X" />
+            <Stat color="bg-sky-200" label="PnL at TP (USDT)" value={Number.isFinite(values.pnlAtTp) ? `$ ${fmt(values.pnlAtTp)}` : "-"} sub="Estimated profit if TP is hit" />
           </div>
         </div>
 
-        <footer className="mt-8 text-xs text-gray-500">
-          <p>
-            Catatan: Perhitungan ini tidak memasukkan biaya (fee) & pendanaan
-            (funding). Rumus likuidasi bervariasi per exchange; leverage dari
-            drawdown di sini adalah pendekatan kasar.
-          </p>
+        <footer className="mt-8 text-center text-sm text-black/70">
+          <p>Made with ❤️ by xxcookiered</p>
         </footer>
       </div>
     </div>

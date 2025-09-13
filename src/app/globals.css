@@ -32,7 +32,30 @@ body {
 
 @layer components {
   .tw-input {
-    @apply px-3 py-2 rounded-xl border border-gray-300 bg-white
-           focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500;
+    @apply px-3 py-2 rounded-lg border-2 border-black bg-white
+           focus:outline-none focus:ring-0 focus:border-black focus:bg-white shadow-[4px_4px_0_0_#000] active:shadow-[2px_2px_0_0_#000];
+  }
+
+  /* Select: only add arrow + spacing; compose with .tw-input */
+  .tw-select {
+    @apply pr-10 appearance-none bg-no-repeat;
+    background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 20 20' fill='none' stroke='%23000' stroke-width='1.5'><path d='M6 8l4 4 4-4'/></svg>");
+    background-position: right 0.75rem center;
+    background-size: 1rem 1rem;
+  }
+
+  /* Consistent label height so two-column inputs align nicely */
+  .tw-label {
+    @apply text-xs sm:text-sm text-gray-600 leading-5 block;
+    min-height: 2.5rem; /* reserve ~2 lines on mobile to prevent wrap misalignment */
+  }
+
+  .tw-card {
+    @apply p-6 rounded-2xl border-2 border-black bg-emerald-100 shadow-[8px_8px_0_0_#000];
+  }
+
+  .tw-title {
+    @apply inline-block px-4 py-2 rounded-xl border-2 border-black bg-red-200 text-black shadow-[6px_6px_0_0_#000]
+           text-2xl sm:text-3xl font-extrabold tracking-tight;
   }
 }
