@@ -26,8 +26,8 @@ function TradingCalculator() {
     }).format(n);
   };
 
-  const toNum = (v: any) => {
-    const n = Number(v);
+  const toNum = (v: number | string) => {
+    const n = typeof v === "number" ? v : Number(v);
     return Number.isFinite(n) ? n : 0;
   };
 
