@@ -29,8 +29,24 @@ To learn more about Next.js, take a look at the following resources:
 
 You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
 
-## Deploy on Vercel
+## Deploy to GitHub Pages
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+This project is configured to deploy as a static site to GitHub Pages using GitHub Actions.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Branch: `main` triggers the deployment workflow.
+- Output: Next.js builds to `out/` using `output: 'export'`.
+- URL: `https://<username>.github.io/trading-calculator`.
+
+Steps:
+
+1. Push to `main` (or click Run workflow in Actions via `workflow_dispatch`).
+2. The workflow at `.github/workflows/deploy.yml` installs deps, builds, and deploys.
+3. Ensure Pages is enabled for the repo (Settings → Pages → Build and deployment: GitHub Actions).
+
+Local build:
+
+```bash
+npm ci
+npm run build
+# Static files will be in ./out
+```
