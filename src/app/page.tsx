@@ -58,7 +58,7 @@ function TradingCalculator() {
     const notional = posSize * E;
 
     const M = riskUSDT;
-    const levNeeded = M > 0 ? notional / M : NaN;
+    const levNeeded = M > 0 ? (notional / M) / 1.5 : NaN;
 
     let rrValue = NaN as number;
     let rrDisplay: string | null = null;
